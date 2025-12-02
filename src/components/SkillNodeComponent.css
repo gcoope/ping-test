@@ -1,0 +1,30 @@
+.skill-node {
+  min-width: 100px;
+  background-color: #6e6e6e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 0.5em 1em;
+  text-align: center;
+
+  &.locked {
+    background-color: #4e4e4e;
+  }
+}
+
+.skill-node-button {
+  background-color: #32c56a;
+  font-size: 0.75em;
+  border: none;
+  margin: 0 auto;
+  cursor: pointer;
+}
+
+.skill-node-title {
+  text-align: center;
+}
+
+.skill-node-status {
+  text-align: center;
+  font-size: 0.5em;
+  font-weight: 200;
+}
