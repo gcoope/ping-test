@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNodes } from "../../context/NodesContext.tsx";
+import { useSearch } from "../../context/SearchContext.tsx";
 import "./SkillsSearch.css";
 
 export const SkillsSearch = () => {
   const [search, setSearch] = useState("");
-  const { searchNodes } = useNodes();
+  const { searchNodes } = useSearch();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);

@@ -3,7 +3,12 @@ import type { SkillNode } from "../types.ts";
 import { SkillNodeStatus } from "../types.ts";
 import type { Edge } from "@xyflow/react";
 import { useLocalStorageSync } from "../hooks/useLocalStorageSync.ts";
-import { isChildOfNestedTarget } from "../utils/edges.ts";
+import {
+  validateAddNode,
+  validateAddEdge,
+} from "../services/skillTreeValidation.ts";
+import { computeTargetStatusFromSource } from "../services/skillTreeStatus.ts";
+import { calculateNewNodePosition } from "../services/skillTreeHelpers.ts";
 
 interface NodesContextType {
   nodes: SkillNode[];
@@ -18,7 +23,6 @@ interface NodesContextType {
   setEdges: (edges: Edge[]) => void;
   removeEdges: (ids: string[]) => void;
 
-  searchNodes: (search: string) => void;
   selectAll: () => void;
   setNodeStatus: (id: string, status: SkillNodeStatus) => void;
 }
@@ -27,6 +31,7 @@ export const NodesContext = createContext<NodesContextType | undefined>(
   undefined
 );
 
+// NodesProvider is used to manage the node and edge state
 export const NodesProvider = ({
   children,
   initialNodes,
@@ -45,35 +50,24 @@ export const NodesProvider = ({
 
   // Validate then create a new node (skill)
   const addNode = (newNode: SkillNode) => {
-    if (nodes.some((node) => node.id === newNode.id)) {
-      console.warn("Skill with this ID already exists");
+    const validation = validateAddNode(newNode, nodes);
+
+    if (!validation.isValid) {
+      if (validation.error === "A skill with this name already exists") {
+        alert(validation.error);
+      } else {
+        console.warn(validation.error);
+      }
       return;
     }
 
-    if (nodes.some((node) => node.data.label === newNode.data.label)) {
-      alert("A skill with this name already exists");
-      return;
-    }
-
-    let newNodePositionY = newNode.position.y;
-    if (nodes.length > 0) {
-      const lowestNode = nodes.reduce(
-        (min, node) => (node.position.y > min.position.y ? node : min),
-        nodes[0]
-      );
-
-      // Magic number as we can't seem to get the node height from React Flow
-      newNodePositionY = lowestNode.position.y + 60;
-    }
+    const position = calculateNewNodePosition(newNode, nodes);
 
     setNodes((prevNodes) => [
       ...prevNodes,
       {
         ...newNode,
-        position: {
-          x: newNode.position.x,
-          y: newNodePositionY,
-        },
+        position,
       },
     ]);
   };
@@ -95,104 +89,41 @@ export const NodesProvider = ({
 
   // Validate then create a new edge connection
   const addEdge = (edge: Edge) => {
+    const validation = validateAddEdge(edge, nodes, edges);
+
+    if (!validation.isValid) {
+      if (
+        validation.error === "Cannot link a skill to itself" ||
+        validation.error === "Cannot link skill to a nested target"
+      ) {
+        alert(validation.error);
+      } else {
+        console.warn(validation.error);
+      }
+      return;
+    }
+
     const sourceNode = nodes.find((node) => node.id === edge.source);
-    const targetNode = nodes.find((node) => node.id === edge.target);
-
-    if (!sourceNode || !targetNode) {
-      console.warn("Source or target node not found");
-      return;
+    if (!sourceNode) {
+      return; // Should not happen after validation, but TypeScript safety
     }
 
-    if (edge.source === edge.target) {
-      alert("Cannot link a skill to itself");
-      return;
-    }
+    // Compute the new status for the target node based on source status
+    const newTargetStatus = computeTargetStatusFromSource(
+      sourceNode.data.status
+    );
 
-    if (edges.find((e) => e.id === `${edge.target}-${edge.source}`)) {
-      console.warn("Target skill is aleady linked to this skill");
-      return;
-    }
-
-    if (edges.some((e) => e.id === edge.id)) {
-      // Just in case...
-      console.warn("This link already exists");
-      return;
-    }
-
-    // Prevent cycles by checking if the source node is a child of a nested target
-    if (isChildOfNestedTarget(sourceNode.id, targetNode.id, edges)) {
-      alert("Cannot link skill to a nested target");
-      return;
-    }
-
-    switch (sourceNode?.data.status) {
-      case SkillNodeStatus.Locked:
-      case SkillNodeStatus.Unlockable:
-        targetNode.data.status = SkillNodeStatus.Locked;
-        break;
-      case SkillNodeStatus.Unlocked:
-        targetNode.data.status = SkillNodeStatus.Unlockable;
-        break;
-    }
-
+    // Update the target node's status
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
         node.id === edge.target
-          ? { ...node, data: { ...node.data, status: targetNode.data.status } }
+          ? { ...node, data: { ...node.data, status: newTargetStatus } }
           : node
       )
     );
 
+    // Add the new edge
     setEdges((prevEdges) => [...prevEdges, edge]);
-  };
-
-  const clearNodeHighlights = () => {
-    setNodes((prevNodes) =>
-      prevNodes.map((node) => ({ ...node, className: "" }))
-    );
-    setEdges((prevEdges) =>
-      prevEdges.map((edge) => ({ ...edge, className: "" }))
-    );
-  };
-
-  // Search and highlight nodes by label (case insensitive)
-  // Edges between highlighted nodes are also highlighted
-  const searchNodes = (search: string) => {
-    // If search is clear, clear all highlights
-    if (search.trim() === "") {
-      clearNodeHighlights();
-      return;
-    }
-
-    const filteredNodes = nodes.filter((node) =>
-      (node.data.label as string).toLowerCase().includes(search.toLowerCase())
-    );
-
-    if (filteredNodes.length > 0) {
-      const highlightedNodeIds = new Set(filteredNodes.map((node) => node.id));
-
-      // Highlight matching nodes
-      setNodes((prevNodes) =>
-        prevNodes.map((node) =>
-          highlightedNodeIds.has(node.id)
-            ? { ...node, className: "highlight" }
-            : { ...node, className: "" }
-        )
-      );
-
-      // Highlight edges connected to highlighted nodes
-      setEdges((prevEdges) =>
-        prevEdges.map((edge) =>
-          highlightedNodeIds.has(edge.source) &&
-          highlightedNodeIds.has(edge.target)
-            ? { ...edge, className: "highlight" }
-            : { ...edge, className: "" }
-        )
-      );
-    } else {
-      // No matches found, clear all highlights
-      clearNodeHighlights();
-    }
   };
 
   const selectAll = () => {
@@ -228,7 +159,6 @@ export const NodesProvider = ({
         edges,
         setEdges,
         addEdge,
-        searchNodes,
         selectAll,
         setNodeStatus,
       }}

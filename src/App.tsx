@@ -105,10 +105,6 @@ const App = () => {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onNodeconnect}
-          onPaneContextMenu={(e) => {
-            e.preventDefault();
-            console.log("context menu", e);
-          }}
           fitView
         />
       </div>
