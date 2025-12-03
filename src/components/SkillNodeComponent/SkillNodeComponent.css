@@ -1,0 +1,40 @@
+.skill-node {
+  --bg-color: var(--skill-locked-bg);
+  background-color: var(--bg-color);
+  min-width: 100px;
+  border: 1px solid var(--bg-color);
+  border-radius: 4px;
+  padding: 0.5em 1em;
+  transition: all 0.4s ease-in-out;
+
+  &.locked {
+    --bg-color: var(--skill-locked-bg);
+  }
+
+  &.unlockable {
+    --bg-color: var(--skill-unlockable-bg);
+  }
+
+  &.unlocked {
+    --bg-color: var(--skill-unlocked-bg);
+  }
+}
+
+.skill-node-button {
+  background-color: var(--cta-color);
+  font-size: 0.75em;
+  border: none;
+  margin: 0.5em 0;
+  cursor: pointer;
+  width: 100%;
+  padding: 0.5em 0;
+  border-radius: 4px;
+}
+
+.skill-node-title {
+}
+
+.skill-node-progress {
+  font-size: 0.75em;
+  font-weight: 200;
+}

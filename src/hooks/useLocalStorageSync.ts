@@ -1,10 +1,8 @@
 import { useEffect } from "react";
 
-/**
- * Hook to synchronize typed state with localStorage
- * Example usage:
- * useLocalStorageSync<SkillNode>("nodes", nodes, setNodes);
- */
+// Hook to synchronize typed state with localStorage
+// Example usage:
+// useLocalStorageSync<SkillNode>("nodes", nodes, setNodes);
 export const useLocalStorageSync = <T>(
   key: string,
   value: T[],

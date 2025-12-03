@@ -7,17 +7,20 @@ import {
   type Edge,
   type EdgeChange,
   applyEdgeChanges,
+  useKeyPress,
 } from "@xyflow/react";
 
 import "@xyflow/react/dist/style.css";
-import { useNodes } from "./context/nodes/index.tsx";
-import { AddNodeForm } from "./components/AddNodeForm.tsx";
+import { useNodes } from "./context/NodesContext.tsx";
+import { AddNodeForm } from "./components/AddNodeForm/AddNodeForm.tsx";
 import { useEffect, useCallback } from "react";
-import { SearchNodes } from "./components/SearchNodes.tsx";
+import { SkillsSearch } from "./components/SkillsSearch/SkillsSearch.tsx";
 
 import "./App.css";
-import { SkillNodeComponent } from "./components/SkillNodeComponent.tsx";
+import { SkillNodeComponent } from "./components/SkillNodeComponent/SkillNodeComponent.tsx";
 import type { SkillNode } from "./types.ts";
+import { useSelectedItems } from "./hooks/useSelectedItems.ts";
+import { skillTreeTemplate } from "./utils/templates.ts";
 
 const nodeTypes = {
   skillNodeComponent: SkillNodeComponent,
@@ -33,55 +36,37 @@ const App = () => {
     addEdge,
     removeNodes,
     removeEdges,
+    selectAll,
   } = useNodes();
+
+  const { nodeIds, edgeIds } = useSelectedItems();
 
   // Prompts to delete any nodes that are selected
   const deleteSelected = useCallback(() => {
-    const selectedNodeIds = nodes
-      .filter((node) => node.selected)
-      .map((node) => node.id);
-
-    const selectedEdgeIds = edges
-      .filter((edge) => edge.selected)
-      .map((edge) => edge.id);
-
-    if (selectedNodeIds.length > 0 || selectedEdgeIds.length > 0) {
+    if (nodeIds.length > 0 || edgeIds.length > 0) {
       if (
         confirm("Are you sure you want to delete the selected nodes/edges?")
       ) {
-        removeNodes(selectedNodeIds);
-        removeEdges(selectedEdgeIds);
+        removeNodes(nodeIds);
+        removeEdges(edgeIds);
       }
     }
-  }, [nodes, removeNodes, removeEdges, edges]);
+  }, [nodeIds, edgeIds, removeNodes, removeEdges]);
+
+  const ctrlAPressed = useKeyPress(["Control+a", "Meta+a"]);
+  const delPressed = useKeyPress("Delete");
 
   useEffect(() => {
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Delete") {
-        deleteSelected();
-      }
-    };
+    if (delPressed) {
+      deleteSelected();
+    }
 
-    document.addEventListener("keyup", handleKeyUp);
-    return () => {
-      document.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [deleteSelected]);
+    if (ctrlAPressed) {
+      selectAll();
+    }
+  }, [delPressed, deleteSelected, ctrlAPressed, selectAll]);
 
   const onNodesChange = (changes: NodeChange<Node>[]) => {
-    changes.forEach((change) => {
-      switch (change.type) {
-        // case "add":
-        //   addNode(change.item as SkillNode);
-        //   break;
-        // case "remove":
-        //   removeNode(change.id);
-        //   break;
-        case "select":
-          // console.log("selected", change.id, change.selected);
-          break;
-      }
-    });
     setNodes(applyNodeChanges(changes, nodes) as SkillNode[]);
   };
 
@@ -101,9 +86,17 @@ const App = () => {
     <>
       <header className="app-header">
         <AddNodeForm addNode={addNode} />
-        <SearchNodes />
+        <button
+          onClick={() => {
+            setNodes(skillTreeTemplate.nodes as SkillNode[]);
+            setEdges(skillTreeTemplate.edges as Edge[]);
+          }}
+        >
+          Load Demo
+        </button>
+        <SkillsSearch />
       </header>
-      <div style={{ width: "100vw", height: "100vh" }}>
+      <div style={{ width: "100%", height: "98vh" }}>
         <ReactFlow
           colorMode="dark"
           nodes={nodes}
@@ -112,9 +105,20 @@ const App = () => {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onNodeconnect}
+          onPaneContextMenu={(e) => {
+            e.preventDefault();
+            console.log("context menu", e);
+          }}
           fitView
         />
       </div>
+      <footer className="app-footer">
+        <p>
+          <span className="app-footer-key">Ctrl/Cmd + A</span> to select all.{" "}
+          <span className="app-footer-key">Del</span> to delete selection.{" "}
+          <span className="app-footer-key">Ctrl/Cmd + K</span> to search.{" "}
+        </p>
+      </footer>
     </>
   );
 };

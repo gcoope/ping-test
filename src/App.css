@@ -1,23 +1,36 @@
 .app-header {
   position: fixed;
-  top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   display: flex;
   flex-direction: row;
-  gap: 1em;
   justify-content: space-between;
   margin: 2em;
 }
 
-/* Override React Flow's default node styles so we can highlight nodes/edges */
+.app-footer {
+  position: fixed;
+  width: 100%;
+  text-align: center;
+  bottom: 0;
+  z-index: 1000;
+  font-style: italic;
+  color: #6e6e6e;
+  user-select: none;
+
+  .app-footer-key {
+    color: #c0c0c0;
+  }
+}
+
+/* Override React Flow's default  styles*/
 
 /* Highlighted nodes - thick orange border */
 .react-flow__node.highlight {
   border: 1px solid var(--highlight-color) !important;
   border-radius: 4px;
-  box-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+  box-shadow: 0 0 10px var(--highlight-color);
 }
 
 /* Highlighted edges - orange color */
@@ -25,10 +38,13 @@
   stroke: var(--highlight-color) !important;
   stroke-width: 1px !important;
 }
-
 .react-flow__edge.highlight .react-flow__edge-text {
   fill: var(--highlight-color) !important;
   font-weight: bold;
+}
+
+.react-flow__handle {
+  border-radius: 0;
 }
 
 /* Override React Flow's selected node styles */

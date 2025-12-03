@@ -1,31 +1,43 @@
 import { createContext, useContext, useState } from "react";
-import type { SkillNode } from "../../types";
+import type { SkillNode } from "../types.ts";
+import { SkillNodeStatus } from "../types.ts";
 import type { Edge } from "@xyflow/react";
-import { useLocalStorageSync } from "../../hooks/useLocalStorageSync.ts";
+import { useLocalStorageSync } from "../hooks/useLocalStorageSync.ts";
+import { isChildOfNestedTarget } from "../utils/edges.ts";
 
 interface NodesContextType {
   nodes: SkillNode[];
+  initialNodes?: SkillNode[];
   setNodes: (nodes: SkillNode[]) => void;
   addNode: (node: SkillNode) => void;
   removeNodes: (ids: string[]) => void;
 
   edges: Edge[];
+  initialEdges?: Edge[];
   addEdge: (edge: Edge) => void;
   setEdges: (edges: Edge[]) => void;
   removeEdges: (ids: string[]) => void;
 
   searchNodes: (search: string) => void;
-
-  unlockNode: (id: string) => void;
+  selectAll: () => void;
+  setNodeStatus: (id: string, status: SkillNodeStatus) => void;
 }
 
 export const NodesContext = createContext<NodesContextType | undefined>(
   undefined
 );
 
-export const NodesProvider = ({ children }: { children: React.ReactNode }) => {
-  const [nodes, setNodes] = useState<SkillNode[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
+export const NodesProvider = ({
+  children,
+  initialNodes,
+  initialEdges,
+}: {
+  children: React.ReactNode;
+  initialNodes?: SkillNode[];
+  initialEdges?: Edge[];
+}) => {
+  const [nodes, setNodes] = useState<SkillNode[]>(initialNodes || []);
+  const [edges, setEdges] = useState<Edge[]>(initialEdges || []);
 
   // Sync our node and edge state with localStorage
   useLocalStorageSync<SkillNode>("nodes", nodes, setNodes);
@@ -87,7 +99,7 @@ export const NodesProvider = ({ children }: { children: React.ReactNode }) => {
     const targetNode = nodes.find((node) => node.id === edge.target);
 
     if (!sourceNode || !targetNode) {
-      console.error("Source or target node not found");
+      console.warn("Source or target node not found");
       return;
     }
 
@@ -107,13 +119,19 @@ export const NodesProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    // Prevent cycles by checking if the source node is a child of a nested target
+    if (isChildOfNestedTarget(sourceNode.id, targetNode.id, edges)) {
+      alert("Cannot link skill to a nested target");
+      return;
+    }
+
     switch (sourceNode?.data.status) {
-      case "locked":
-      case "unlockable":
-        targetNode.data.status = "locked";
+      case SkillNodeStatus.Locked:
+      case SkillNodeStatus.Unlockable:
+        targetNode.data.status = SkillNodeStatus.Locked;
         break;
-      case "unlocked":
-        targetNode.data.status = "unlockable";
+      case SkillNodeStatus.Unlocked:
+        targetNode.data.status = SkillNodeStatus.Unlockable;
         break;
     }
 
@@ -128,16 +146,21 @@ export const NodesProvider = ({ children }: { children: React.ReactNode }) => {
     setEdges((prevEdges) => [...prevEdges, edge]);
   };
 
-  // Search and highlight nodes/edges by label (case insensitive)
+  const clearNodeHighlights = () => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => ({ ...node, className: "" }))
+    );
+    setEdges((prevEdges) =>
+      prevEdges.map((edge) => ({ ...edge, className: "" }))
+    );
+  };
+
+  // Search and highlight nodes by label (case insensitive)
+  // Edges between highlighted nodes are also highlighted
   const searchNodes = (search: string) => {
     // If search is clear, clear all highlights
     if (search.trim() === "") {
-      setNodes((prevNodes) =>
-        prevNodes.map((node) => ({ ...node, className: "" }))
-      );
-      setEdges((prevEdges) =>
-        prevEdges.map((edge) => ({ ...edge, className: "" }))
-      );
+      clearNodeHighlights();
       return;
     }
 
@@ -160,7 +183,7 @@ export const NodesProvider = ({ children }: { children: React.ReactNode }) => {
       // Highlight edges connected to highlighted nodes
       setEdges((prevEdges) =>
         prevEdges.map((edge) =>
-          highlightedNodeIds.has(edge.source) ||
+          highlightedNodeIds.has(edge.source) &&
           highlightedNodeIds.has(edge.target)
             ? { ...edge, className: "highlight" }
             : { ...edge, className: "" }
@@ -168,20 +191,27 @@ export const NodesProvider = ({ children }: { children: React.ReactNode }) => {
       );
     } else {
       // No matches found, clear all highlights
-      setNodes((prevNodes) =>
-        prevNodes.map((node) => ({ ...node, className: "" }))
-      );
-      setEdges((prevEdges) =>
-        prevEdges.map((edge) => ({ ...edge, className: "" }))
-      );
+      clearNodeHighlights();
     }
   };
 
-  const unlockNode = (id: string) => {
+  const selectAll = () => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => ({ ...node, selected: true }))
+    );
+    setEdges((prevEdges) =>
+      prevEdges.map((edge) => ({ ...edge, selected: true }))
+    );
+  };
+
+  const setNodeStatus = (id: string, status: SkillNodeStatus) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
         node.id === id
-          ? { ...node, data: { ...node.data, status: "unlocked" } }
+          ? {
+              ...node,
+              data: { ...node.data, status: status },
+            }
           : node
       )
     );
@@ -199,7 +229,8 @@ export const NodesProvider = ({ children }: { children: React.ReactNode }) => {
         setEdges,
         addEdge,
         searchNodes,
-        unlockNode,
+        selectAll,
+        setNodeStatus,
       }}
     >
       {children}

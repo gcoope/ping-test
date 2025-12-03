@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { SkillNode } from "../types";
+import type { SkillNode } from "../../types";
+import { SkillNodeStatus } from "../../types";
 
 import "./AddNodeForm.css";
 
@@ -19,7 +20,7 @@ export const AddNodeForm = ({
         data: {
           id,
           label: nodeName.trim(),
-          status: "unlockable",
+          status: SkillNodeStatus.Unlockable,
         },
         type: "skillNodeComponent",
         position: { x: 0, y: 0 },
@@ -32,6 +33,7 @@ export const AddNodeForm = ({
     <form onSubmit={handleSubmit} className="add-node-form">
       <input
         className="add-node-input"
+        data-testid="add-node-input"
         type="text"
         name="skill-name"
         placeholder="Enter skill name..."
@@ -40,6 +42,7 @@ export const AddNodeForm = ({
       />
       <button
         className="add-node-button"
+        data-testid="add-node-button"
         disabled={!nodeName.trim()}
         onClick={() => {
           handleSubmit();

@@ -1,6 +1,13 @@
-import type { Edge, Node } from "@xyflow/react";
+import type { Node } from "@xyflow/react";
 
-export type SkillNodeStatus = "locked" | "unlockable" | "unlocked";
+export const SkillNodeStatus = {
+  Locked: "locked",
+  Unlockable: "unlockable",
+  Unlocked: "unlocked",
+} as const;
+
+export type SkillNodeStatus =
+  (typeof SkillNodeStatus)[keyof typeof SkillNodeStatus];
 
 export interface SkillNode extends Node {
   data: {
@@ -8,8 +15,4 @@ export interface SkillNode extends Node {
     label: string;
     status: SkillNodeStatus;
   };
-}
-
-export interface SkillEdge extends Edge {
-  type: "skill";
 }

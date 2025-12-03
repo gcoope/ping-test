@@ -1,0 +1,17 @@
+.search-nodes {
+  position: relative;
+  input {
+    margin: 0;
+    padding: 0.5em;
+    border-radius: 4px;
+    border: none;
+  }
+
+  &::after {
+    content: "🔍";
+    position: absolute;
+    right: 0.5em;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}

@@ -1,8 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Gabarito:wght@400..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Gabarito", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
+  color-scheme: dark;
 
-  --highlight-color: #ff8c00;
+  --highlight-color: #ffffff;
+  --skill-locked-bg: #4e4e4e;
+  --skill-unlockable-bg: #7e7e7e;
+  --skill-unlocked-bg: #32a8c5;
+  --cta-color: #32c56a;
+}
+
+body {
+  background-color: rgb(20, 20, 20);
 }

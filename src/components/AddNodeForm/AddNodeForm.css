@@ -7,15 +7,20 @@
 
 .add-node-input {
   padding: 0.5em;
+  padding-right: 2.5em;
   border-radius: 4px;
   border: none;
 }
 
 .add-node-button {
-  background-color: #32c56a;
+  background-color: var(--cta-color);
   display: block;
   padding: 0.5em 0.75em;
   margin: 0;
   border: none;
   border-radius: 4px;
+
+  &[disabled] {
+    cursor: not-allowed;
+  }
 }
