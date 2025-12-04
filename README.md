@@ -2,6 +2,10 @@
 
 ## Challenge: Interactive Skill Tree Builder
 
+<img width="1915" height="910" alt="image" src="https://github.com/user-attachments/assets/f12a38f6-b69b-47f6-9d95-440081f86da4" />
+
+[Live demo](https://ping-test-6ff.pages.dev/)
+
 ### Running instructions
 
 ```bash
